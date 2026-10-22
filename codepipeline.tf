@@ -119,7 +119,7 @@ resource "aws_codepipeline" "n8n" {
     }
   }
   stage {
-    name = "DeployMain"
+    name = "Deploy"
     action {
       name            = "Main"
       category        = "Deploy"
@@ -127,15 +127,13 @@ resource "aws_codepipeline" "n8n" {
       provider        = "ECS"
       version         = "1"
       input_artifacts = ["BuildArtifact"]
+      run_order       = 1
       configuration = {
         ClusterName = aws_ecs_cluster.n8n.name
         ServiceName = aws_ecs_service.main.name
         FileName    = "imagedefinitions-main.json"
       }
     }
-  }
-  stage {
-    name = "DeployProcessing"
     action {
       name            = "Webhook"
       category        = "Deploy"

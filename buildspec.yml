@@ -7,10 +7,12 @@ phases:
       - REGISTRY="${N8N_REPOSITORY_URI%%/*}"
       - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
   build:
+    on-failure: RETRY-3
     commands:
       - docker build --platform linux/arm64 --build-arg "N8N_VERSION=$N8N_VERSION" -t "$N8N_REPOSITORY_URI:$IMAGE_TAG" -f Dockerfile .
   post_build:
     commands:
+      - test "$CODEBUILD_BUILD_SUCCEEDING" = "1"
       - docker push "$N8N_REPOSITORY_URI:$IMAGE_TAG"
       - printf '[{"name":"n8n","imageUri":"%s:%s"}]' "$N8N_REPOSITORY_URI" "$IMAGE_TAG" > imagedefinitions-main.json
       - cp imagedefinitions-main.json imagedefinitions-webhook.json

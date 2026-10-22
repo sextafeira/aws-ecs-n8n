@@ -143,7 +143,7 @@ Envie o código para a branch configurada. O Terraform não faz o push. Depois d
 aws codepipeline start-pipeline-execution --name "$(terraform output -raw pipeline_name)"
 ```
 
-A entrega segue Source → Build → DeployMain → DeployProcessing. Main é atualizado primeiro; webhook e worker são atualizados em paralelo na última etapa. A entrega não é uma transação única dos três serviços.
+A entrega segue Source → Build → Deploy. O estágio Deploy atualiza main, webhook e worker em paralelo, com uma ação para cada serviço ECS. A entrega não é uma transação única dos três serviços.
 
 O CodeBuild publica uma imagem n8n, compartilhada pelos serviços main, webhook e worker. A tag combina commit e número do build, por exemplo `a1b2c3d4e5f6-1`. Ela aparece nos logs e no artefato `release.json`. Imagens são imutáveis, sem `latest`.
 
