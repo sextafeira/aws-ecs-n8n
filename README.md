@@ -217,21 +217,50 @@ O `untaint` não altera as instâncias. Use-o somente depois de confirmar que o 
 
 ## Remoção
 
-`terraform destroy` também exclui a zona e os registros Route 53. Para manter o domínio no Route 53, preserve esses recursos antes de executar a remoção; não use o destroy completo abaixo diretamente.
+O destroy é executado manualmente pelo responsável pelo laboratório. Pare novas entregas e espere os workflows terminarem. Se habilitou `deletion_protection`, desabilite e aplique antes da remoção.
 
-Na limpeza de 21/10/2026, foram removidos os 100 recursos restantes, sem snapshot final do RDS e sem retenção dos dois segredos. A zona e todos os registros DNS foram preservados e continuam no estado do Terraform. O bucket compartilhado do backend também permanece. O registro da aplicação aponta para o ALB removido e será atualizado quando a infraestrutura for recriada.
+As dependências mantêm rotas, associações das subnets, NATs, saída HTTPS dos hosts e permissões IAM disponíveis até os serviços e as EC2 encerrarem. As regras de banco, fila, APIs externas e ALB também permanecem até a exclusão dos serviços que as utilizam. A ordem do destroy é inversa à criação: serviços ECS → capacity provider e ASG → rede. Não remova regras ou rotas manualmente enquanto as tasks estiverem encerrando.
 
-Os comandos abaixo removem **todo o projeto, incluindo o Route 53**:
+Neste laboratório, `skip_final_snapshot = true` evita snapshot final do RDS e `recovery_window_in_days = 0` solicita exclusão definitiva dos segredos. ECR e bucket de artefatos são esvaziados. O bucket compartilhado do estado permanece. Essas configurações precisam estar aplicadas antes da remoção de uma instalação antiga; editar os arquivos e executar somente destroy pode continuar usando os valores anteriores do estado. A exclusão definitiva dos segredos é assíncrona na AWS e pode levar algum tempo para liberar os nomes.
 
-Pare novas entregas, espere os workflows terminarem e ajuste `main_count`, `webhook_count` e `worker_count` para zero. Atualize também `image_tag` com a versão em uso antes do apply. Se habilitou `deletion_protection`, desabilite e aplique antes da remoção.
+### Preservar o Route 53
+
+O destroy completo também exclui a zona e os registros DNS. Para preservar todos eles, salve o estado fora do repositório e retire somente os três recursos Route 53 do estado antes de gerar o plano de remoção:
 
 ```bash
-terraform apply --var-file=live/sandbox/terraform.tfvars
+export AWS_PROFILE=sextafeira
+export AWS_REGION=us-east-1
+
+terraform state pull > /tmp/aws-ecs-n8n-before-destroy.tfstate
+chmod 600 /tmp/aws-ecs-n8n-before-destroy.tfstate
+
+terraform state rm aws_route53_zone.n8n aws_route53_record.certificate aws_route53_record.n8n
 terraform plan -destroy --var-file=live/sandbox/terraform.tfvars
 terraform destroy --var-file=live/sandbox/terraform.tfvars
 ```
 
-RDS deixa um snapshot final, que permanece na conta e pode consumir créditos. ECR e bucket de artefatos são esvaziados. Segredos ficam em recuperação por sete dias; recriar com o mesmo nome exige restaurar/importar ou esperar a exclusão. O bucket de estado permanece. Antes de excluir a hosted zone, volte a usar os servidores DNS do Registro.br, ou migre os registros para outro serviço DNS caso o domínio já esteja sendo usado.
+Confira que o plano não contém recursos `aws_route53_*`. O `state rm` não exclui os recursos da AWS, mas deixa o DNS sem gerenciamento por esse estado. Não execute apply normal depois disso sem importar novamente a zona e os registros existentes. O registro A preservado aponta para o ALB excluído até a próxima implantação. Os nameservers cadastrados no Registro.br permanecem iguais.
+
+### Pendências da limpeza de 22/10/2026
+
+A auditoria após o destroy encontrou o snapshot manual `aws-ecs-n8n-final-b4c9042a` e os segredos `aws-ecs-n8n/encryption_key` e `aws-ecs-n8n/valkey_password` agendados com recuperação de sete dias. O CloudTrail confirmou a janela de recuperação usada nessa exclusão. Esses recursos não estão mais no estado e não serão removidos por outro destroy.
+
+Para concluir a limpeza, o responsável pode executar os comandos abaixo. Eles excluem o snapshot e os dois segredos definitivamente, sem recuperação:
+
+```bash
+aws --profile sextafeira --region us-east-1 rds delete-db-snapshot \
+  --db-snapshot-identifier aws-ecs-n8n-final-b4c9042a
+
+aws --profile sextafeira --region us-east-1 secretsmanager delete-secret \
+  --secret-id arn:aws:secretsmanager:us-east-1:990773979444:secret:aws-ecs-n8n/encryption_key-Zri1ck \
+  --force-delete-without-recovery
+
+aws --profile sextafeira --region us-east-1 secretsmanager delete-secret \
+  --secret-id arn:aws:secretsmanager:us-east-1:990773979444:secret:aws-ecs-n8n/valkey_password-9k4l7g \
+  --force-delete-without-recovery
+```
+
+O capacity provider pode continuar visível como `INACTIVE`; isso é um registro inativo do serviço, não capacidade EC2 em execução. EC2 encerradas e NATs excluídos também podem aparecer temporariamente nas consultas históricas.
 
 ## Referências
 

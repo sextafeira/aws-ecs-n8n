@@ -108,7 +108,15 @@ resource "aws_autoscaling_group" "ecs" {
   lifecycle {
     ignore_changes = [desired_capacity]
   }
-  depends_on = [aws_route.private_access_1a, aws_route.private_access_1b, aws_iam_role_policy_attachment.ecs_host_ecs, aws_iam_role_policy_attachment.ecs_host_ssm]
+  depends_on = [
+    aws_route.private_access_1a,
+    aws_route.private_access_1b,
+    aws_route_table_association.private_1a,
+    aws_route_table_association.private_1b,
+    aws_vpc_security_group_egress_rule.host_https,
+    aws_iam_role_policy_attachment.ecs_host_ecs,
+    aws_iam_role_policy_attachment.ecs_host_ssm
+  ]
 }
 
 resource "aws_ecs_capacity_provider" "ec2" {

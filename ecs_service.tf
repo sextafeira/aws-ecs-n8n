@@ -38,7 +38,13 @@ resource "aws_ecs_service" "main" {
     aws_ecs_cluster_capacity_providers.n8n,
     aws_lb_listener_rule.webhook,
     aws_vpc_security_group_egress_rule.task_to_rds,
-    aws_vpc_security_group_egress_rule.task_to_valkey
+    aws_vpc_security_group_egress_rule.task_to_valkey,
+    aws_vpc_security_group_egress_rule.task_http,
+    aws_vpc_security_group_egress_rule.task_https,
+    aws_vpc_security_group_ingress_rule.rds_from_task,
+    aws_vpc_security_group_ingress_rule.valkey_from_task,
+    aws_vpc_security_group_ingress_rule.task_from_alb,
+    aws_vpc_security_group_egress_rule.alb_to_task
   ]
 
   tags = {
@@ -88,7 +94,13 @@ resource "aws_ecs_service" "webhook" {
     aws_ecs_cluster_capacity_providers.n8n,
     aws_lb_listener_rule.webhook,
     aws_vpc_security_group_egress_rule.task_to_rds,
-    aws_vpc_security_group_egress_rule.task_to_valkey
+    aws_vpc_security_group_egress_rule.task_to_valkey,
+    aws_vpc_security_group_egress_rule.task_http,
+    aws_vpc_security_group_egress_rule.task_https,
+    aws_vpc_security_group_ingress_rule.rds_from_task,
+    aws_vpc_security_group_ingress_rule.valkey_from_task,
+    aws_vpc_security_group_ingress_rule.task_from_alb,
+    aws_vpc_security_group_egress_rule.alb_to_task
   ]
 
   tags = {
@@ -132,7 +144,11 @@ resource "aws_ecs_service" "worker" {
     aws_ecs_cluster_capacity_providers.n8n,
     aws_lb_listener_rule.webhook,
     aws_vpc_security_group_egress_rule.task_to_rds,
-    aws_vpc_security_group_egress_rule.task_to_valkey
+    aws_vpc_security_group_egress_rule.task_to_valkey,
+    aws_vpc_security_group_egress_rule.task_http,
+    aws_vpc_security_group_egress_rule.task_https,
+    aws_vpc_security_group_ingress_rule.rds_from_task,
+    aws_vpc_security_group_ingress_rule.valkey_from_task
   ]
 
   tags = {

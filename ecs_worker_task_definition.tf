@@ -116,7 +116,12 @@ resource "aws_ecs_task_definition" "worker" {
       }
     }
   ])
-  depends_on = [aws_iam_role_policy.ecs_secrets, aws_secretsmanager_secret_version.encryption_key, aws_secretsmanager_secret_version.valkey_password]
+  depends_on = [
+    aws_iam_role_policy_attachment.ecs_execution,
+    aws_iam_role_policy.ecs_secrets,
+    aws_secretsmanager_secret_version.encryption_key,
+    aws_secretsmanager_secret_version.valkey_password
+  ]
 
   tags = {
     Name        = format("%s-worker", var.project_name)

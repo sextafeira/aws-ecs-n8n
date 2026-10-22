@@ -5,7 +5,7 @@ resource "random_password" "encryption_key" {
 
 resource "aws_secretsmanager_secret" "encryption_key" {
   name                    = format("%s/encryption_key", var.project_name)
-  recovery_window_in_days = 7
+  recovery_window_in_days = 0
 
   tags = {
     Name        = format("%s/encryption_key", var.project_name)
@@ -26,7 +26,7 @@ resource "random_password" "valkey_password" {
 
 resource "aws_secretsmanager_secret" "valkey_password" {
   name                    = format("%s/valkey_password", var.project_name)
-  recovery_window_in_days = 7
+  recovery_window_in_days = 0
 
   tags = {
     Name        = format("%s/valkey_password", var.project_name)

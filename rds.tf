@@ -51,16 +51,11 @@ resource "aws_db_instance" "n8n" {
   auto_minor_version_upgrade  = true
   copy_tags_to_snapshot       = true
   deletion_protection         = var.deletion_protection
-  skip_final_snapshot         = false
-  final_snapshot_identifier   = format("%s-final-%s", var.project_name, random_id.snapshot.hex)
+  skip_final_snapshot         = true
 
   tags = {
     Name        = var.project_name
     Environment = var.environment
     Terraform   = "True"
   }
-}
-
-resource "random_id" "snapshot" {
-  byte_length = 4
 }
