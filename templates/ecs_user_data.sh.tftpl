@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euo pipefail
+cat >> /etc/ecs/ecs.config <<'ECS_CONFIG'
+ECS_CLUSTER=${cluster_name}
+ECS_RESERVED_MEMORY=256
+ECS_ENABLE_TASK_IAM_ROLE=true
+ECS_AWSVPC_BLOCK_IMDS=true
+ECS_ENABLE_AWSLOGS_EXECUTIONROLE_OVERRIDE=true
+ECS_CONFIG

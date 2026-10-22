@@ -1,0 +1,15 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+tfplan*
+*.tfplan
+crash.log
+*.log
+.env
+__pycache__/
+*.pyc
+*.auto.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
