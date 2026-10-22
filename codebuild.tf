@@ -8,7 +8,7 @@ resource "aws_codebuild_project" "n8n" {
   }
   source {
     type      = "CODEPIPELINE"
-    buildspec = "buildspec.yml"
+    buildspec = file("${path.module}/buildspec.yml")
   }
   environment {
     type                        = "ARM_CONTAINER"

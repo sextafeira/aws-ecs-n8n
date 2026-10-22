@@ -55,7 +55,7 @@ Os arquivos Terraform ficam na raiz e compartilham provider, backend e estado. `
 | `codebuild*.tf`, `codepipeline*.tf`, `ecr.tf`, `buildspec.yml` | Build e entrega |
 | `templates/ecs_user_data.sh.tftpl` | Configuração do agente ECS nas EC2 |
 
-O build fica inteiro no `buildspec.yml`: autenticação no ECR, build ARM64, push e geração dos arquivos de imagem usados pelo CodePipeline. Durante o build, o Dockerfile baixa diretamente da AWS a cadeia pública de certificados do RDS para dentro da imagem. Não há diretório de certificados no repositório, scripts ou sincronização externa de task definitions.
+O build fica inteiro no `buildspec.yml`: autenticação no ECR, build ARM64, push e geração dos arquivos de imagem usados pelo CodePipeline. O Terraform lê esse arquivo local com `file()` e envia seu conteúdo ao projeto CodeBuild durante o apply. O CodeBuild usa o YAML armazenado na configuração do projeto, sem buscar o buildspec no código recebido do GitHub. Alterações no buildspec exigem terraform apply; alterações no Dockerfile exigem commit e push, pois ele continua vindo do Source. Durante o build, o Dockerfile baixa diretamente da AWS a cadeia pública de certificados do RDS para dentro da imagem. Não há diretório de certificados no repositório, scripts ou sincronização externa de task definitions.
 
 ## Conta e custos
 
@@ -145,7 +145,7 @@ aws codepipeline start-pipeline-execution --name "$(terraform output -raw pipeli
 
 A entrega segue Source → Build → Deploy. O estágio Deploy atualiza main, webhook e worker em paralelo, com uma ação para cada serviço ECS. A entrega não é uma transação única dos três serviços.
 
-O CodeBuild publica uma imagem n8n, compartilhada pelos serviços main, webhook e worker. A tag combina commit e número do build, por exemplo `a1b2c3d4e5f6-1`. Ela aparece nos logs e no artefato `release.json`. Imagens são imutáveis, sem `latest`.
+O CodeBuild usa a imagem oficial `ghcr.io/n8n-io/n8n`, na versão definida por `n8n_version`, para construir a imagem ARM64 publicada no ECR e compartilhada pelos serviços main, webhook e worker. O GHCR evita depender do endpoint `docker.n8n.io`, que respondeu com HTTP 429 nos builds deste laboratório. A tag publicada no ECR combina commit e número do build, por exemplo `a1b2c3d4e5f6-1`. Ela aparece nos logs e no artefato `release.json`. Imagens são imutáveis, sem `latest`.
 
 Depois do primeiro pipeline concluído, atualize em `live/sandbox/terraform.tfvars`:
 
