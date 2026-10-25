@@ -1,0 +1,27 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - IMAGE_TAG="${CODEBUILD_RESOLVED_SOURCE_VERSION:0:12}-${CODEBUILD_BUILD_NUMBER}"
+      - REGISTRY="${N8N_REPOSITORY_URI%%/*}"
+      - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
+  build:
+    on-failure: RETRY-3
+    commands:
+      - docker build --platform linux/arm64 --build-arg "N8N_VERSION=$N8N_VERSION" -t "$N8N_REPOSITORY_URI:$IMAGE_TAG" -f Dockerfile .
+  post_build:
+    commands:
+      - test "$CODEBUILD_BUILD_SUCCEEDING" = "1"
+      - docker push "$N8N_REPOSITORY_URI:$IMAGE_TAG"
+      - printf '[{"name":"n8n","imageUri":"%s:%s"}]' "$N8N_REPOSITORY_URI" "$IMAGE_TAG" > imagedefinitions-main.json
+      - cp imagedefinitions-main.json imagedefinitions-webhook.json
+      - cp imagedefinitions-main.json imagedefinitions-worker.json
+      - printf '{"image_tag":"%s"}' "$IMAGE_TAG" > release.json
+
+artifacts:
+  files:
+    - imagedefinitions-main.json
+    - imagedefinitions-webhook.json
+    - imagedefinitions-worker.json
+    - release.json
